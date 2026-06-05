@@ -1,0 +1,29 @@
+{{define "content"}}
+<h1>Sites <a href="/sites/add" class="btn btn-primary btn-sm" style="margin-left:10px">+ Dodaj site</a></h1>
+<div class="card">
+<table>
+  <tr><th>Domena</th><th>CDN subdomena</th><th>WP Source</th><th>LB Policy</th><th>Status</th><th>Akcje</th></tr>
+  {{range .Sites}}
+  <tr>
+    <td><strong>{{.Domain}}</strong></td>
+    <td>{{if .CDNSub}}<code>{{.CDNSub}}</code>{{else}}<span style="color:#555">—</span>{{end}}</td>
+    <td style="font-size:12px;color:#777">{{if .WPSource}}{{.WPSource}}{{else}}—{{end}}</td>
+    <td><code>{{.LBPolicy}}</code></td>
+    <td>{{if .Active}}<span class="status-online">● active</span>{{else}}<span class="status-offline">● inactive</span>{{end}}</td>
+    <td>
+      <form method="post" action="/sites/{{.ID}}/delete" style="display:inline"
+            onsubmit="return confirm('Usuń site {{.Domain}}?')">
+        <button class="btn btn-sm btn-danger">usuń</button>
+      </form>
+    </td>
+  </tr>
+  {{else}}
+  <tr><td colspan="6" style="color:#555;padding:20px">
+    Brak site'ów. <a href="/sites/add">Dodaj pierwszy →</a>
+  </td></tr>
+  {{end}}
+</table>
+</div>
+{{end}}
+
+{{template "base" .}}

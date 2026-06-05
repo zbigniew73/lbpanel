@@ -1,0 +1,39 @@
+{{define "login.html"}}<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>lbpanel – login</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:monospace;background:#0f0f0f;color:#d0d0d0;display:flex;align-items:center;justify-content:center;min-height:100vh}
+.box{width:340px;background:#141414;border:1px solid #2a2a2a;padding:30px}
+h1{font-size:18px;color:#5af;margin-bottom:24px;text-align:center}
+.form-group{margin-bottom:14px}
+label{display:block;font-size:12px;color:#888;margin-bottom:4px}
+input{width:100%;padding:8px 10px;background:#1a1a1a;border:1px solid #333;color:#d0d0d0;font-family:monospace;font-size:13px}
+input:focus{outline:none;border-color:#25a}
+button{width:100%;padding:9px;background:#0d1a2a;border:1px solid #25a;color:#5af;cursor:pointer;font-family:monospace;font-size:14px;margin-top:8px}
+button:hover{background:#0a1520;color:#7cf}
+.error{color:#f88;background:#1a0808;border:1px solid #633;padding:8px;margin-bottom:12px;font-size:13px}
+.brand{text-align:center;font-size:13px;color:#444;margin-bottom:20px}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="brand">⚖ load balancer panel v{{version}}</div>
+  <h1>Logowanie</h1>
+  {{if .Error}}<div class="error">{{.Error}}</div>{{end}}
+  <form method="post" action="/login">
+    <div class="form-group">
+      <label>Login</label>
+      <input type="text" name="username" autofocus autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Hasło</label>
+      <input type="password" name="password" autocomplete="current-password">
+    </div>
+    <button type="submit">Zaloguj →</button>
+  </form>
+</div>
+</body>
+</html>{{end}}

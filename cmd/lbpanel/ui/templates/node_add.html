@@ -1,0 +1,43 @@
+{{define "content"}}
+<h1>Dodaj Node</h1>
+
+{{if .NewKey}}
+<div class="card">
+  <h2 style="color:#4f8">✓ Node <strong>{{.NodeName}}</strong> dodany pomyślnie!</h2>
+  <p style="margin:12px 0;color:#888">Skopiuj klucz API — wyświetlany <strong style="color:#fa4">tylko raz</strong>:</p>
+  <div class="key-box">{{.NewKey}}</div>
+  <p style="font-size:12px;color:#666;margin-bottom:16px">Użyj tego klucza przy instalacji agenta na node.</p>
+  
+  <p style="margin-bottom:12px;color:#aaa">Szybka instalacja agenta na <strong>{{.NodeName}}</strong>:</p>
+  <pre>curl -fsSL "http://lbpanel.20z.eu/install-script?node={{.NodeID}}" | bash</pre>
+  <p style="font-size:12px;color:#666;margin-top:8px">Lub pobierz skrypt: <a href="/install-script?node={{.NodeID}}">install-lbagent-{{.NodeName}}.sh</a></p>
+  
+  <div style="margin-top:16px">
+    <a href="/nodes" class="btn">← Wróć do listy</a>
+    <a href="/nodes/add" class="btn btn-primary" style="margin-left:8px">+ Dodaj kolejny</a>
+  </div>
+</div>
+{{else}}
+<div class="card" style="max-width:480px">
+  {{if .Error}}<div class="error">{{.Error}}</div>{{end}}
+  <form method="post" action="/nodes/add">
+    <div class="form-group">
+      <label>Nazwa node (np. web01)</label>
+      <input type="text" name="name" placeholder="web01" autofocus>
+    </div>
+    <div class="form-group">
+      <label>Adres IP</label>
+      <input type="text" name="ip" placeholder="192.168.1.10">
+    </div>
+    <div class="form-group">
+      <label>Port agenta (domyślnie: 7313)</label>
+      <input type="number" name="port" placeholder="7313" value="7313">
+    </div>
+    <button type="submit" class="btn btn-primary">Generuj klucz API i dodaj →</button>
+    <a href="/nodes" class="btn" style="margin-left:8px">Anuluj</a>
+  </form>
+</div>
+{{end}}
+{{end}}
+
+{{template "base" .}}

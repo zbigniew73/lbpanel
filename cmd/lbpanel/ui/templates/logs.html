@@ -1,0 +1,24 @@
+{{define "content"}}
+<h1>Logi operacji</h1>
+<div class="card">
+<table>
+  <tr><th>Czas</th><th>Node</th><th>Akcja</th><th>Wynik</th></tr>
+  {{range .Logs}}
+  <tr>
+    <td style="font-size:12px;color:#666;white-space:nowrap">{{formatTime .Created}}</td>
+    <td>{{.Node}}</td>
+    <td><code>{{.Action}}</code></td>
+    <td style="
+      {{if eq .Result "ok"}}color:#4f8
+      {{else if eq .Result "online"}}color:#4f8
+      {{else if eq .Result "offline"}}color:#f44
+      {{else}}color:#fa4{{end}}">{{.Result}}</td>
+  </tr>
+  {{else}}
+  <tr><td colspan="4" style="color:#555;padding:20px">Brak wpisów w logach</td></tr>
+  {{end}}
+</table>
+</div>
+{{end}}
+
+{{template "base" .}}

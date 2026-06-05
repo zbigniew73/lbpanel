@@ -1,0 +1,102 @@
+{{define "content"}}
+<h1>Dashboard</h1>
+
+<div>
+  <div class="stat">
+    <div class="stat-val">{{.OnlineCount}}/{{.TotalNodes}}</div>
+    <div class="stat-lbl">NODES ONLINE</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val">{{.TotalSites}}</div>
+    <div class="stat-lbl">SITES</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val {{if .CaddyOnline}}status-online{{else}}status-offline{{end}}">
+      {{if .CaddyOnline}}UP{{else}}DOWN{{end}}
+    </div>
+    <div class="stat-lbl">CADDY API</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px">
+
+<div class="card">
+  <h2>Nodes</h2>
+  <table>
+    <tr><th>Nazwa</th><th>IP</th><th>Status</th><th>Ostatni ping</th></tr>
+    {{range .Nodes}}
+    <tr>
+      <td>{{.Name}}</td>
+      <td>{{.IP}}</td>
+      <td><span class="{{statusClass .Status}}">● {{.Status}}</span></td>
+      <td>{{formatTimePtr .LastSeen}}</td>
+    </tr>
+    {{else}}
+    <tr><td colspan="4" style="color:#555;font-style:italic">Brak nodes. <a href="/nodes/add">Dodaj pierwszy</a></td></tr>
+    {{end}}
+  </table>
+  <a href="/nodes" class="btn btn-sm">Zarządzaj nodes →</a>
+  <form method="post" action="/nodes/checkall" style="display:inline;margin-left:8px">
+    <button class="btn btn-sm">Sprawdź wszystkie</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Sites</h2>
+  <table>
+    <tr><th>Domena</th><th>CDN</th><th>LB Policy</th></tr>
+    {{range .Sites}}
+    <tr>
+      <td>{{.Domain}}</td>
+      <td>{{if .CDNSub}}{{.CDNSub}}{{else}}<span style="color:#555">—</span>{{end}}</td>
+      <td><code>{{.LBPolicy}}</code></td>
+    </tr>
+    {{else}}
+    <tr><td colspan="3" style="color:#555;font-style:italic">Brak sites. <a href="/sites/add">Dodaj pierwszy</a></td></tr>
+    {{end}}
+  </table>
+  <a href="/sites" class="btn btn-sm">Zarządzaj sites →</a>
+</div>
+
+</div>
+
+<div class="card" style="margin-top:0">
+  <h2>Ostatnie operacje</h2>
+  <table>
+    <tr><th>Czas</th><th>Node</th><th>Akcja</th><th>Wynik</th></tr>
+    {{range .Logs}}
+    <tr>
+      <td style="color:#666;font-size:12px">{{formatTime .Created}}</td>
+      <td>{{.Node}}</td>
+      <td><code>{{.Action}}</code></td>
+      <td style="{{if eq .Result "ok"}}color:#4f8{{else if eq .Result "online"}}color:#4f8{{else if eq .Result "offline"}}color:#f44{{else}}color:#fa4{{end}}">{{.Result}}</td>
+    </tr>
+    {{else}}
+    <tr><td colspan="4" style="color:#555">Brak wpisów</td></tr>
+    {{end}}
+  </table>
+  <a href="/logs" class="btn btn-sm">Pełne logi →</a>
+</div>
+
+<div style="margin-top:16px">
+  <form method="post" action="/caddy/reload" id="reloadForm" style="display:inline">
+    <button class="btn btn-primary">⟳ Przeładuj Caddy config</button>
+  </form>
+  <span id="reloadResult" style="margin-left:12px;font-size:13px"></span>
+</div>
+
+<script>
+document.getElementById('reloadForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  fetch('/caddy/reload',{method:'POST'})
+    .then(r=>r.json())
+    .then(d=>{
+      var el = document.getElementById('reloadResult');
+      el.textContent = d.result === 'ok' ? '✓ Config załadowany' : '✗ '+d.result;
+      el.style.color = d.result === 'ok' ? '#4f8' : '#f44';
+    });
+});
+</script>
+{{end}}
+
+{{template "base" .}}

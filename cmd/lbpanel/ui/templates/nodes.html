@@ -1,0 +1,57 @@
+{{define "content"}}
+<h1>Nodes <a href="/nodes/add" class="btn btn-primary btn-sm" style="margin-left:10px">+ Dodaj node</a></h1>
+
+<div class="card">
+<table>
+  <tr>
+    <th>Nazwa</th><th>IP</th><th>Port</th><th>Status</th>
+    <th>Ostatni ping</th><th>API Key (skrót)</th><th>Akcje</th>
+  </tr>
+  {{range .Nodes}}
+  <tr>
+    <td><strong>{{.Name}}</strong></td>
+    <td><code>{{.IP}}</code></td>
+    <td>{{.Port}}</td>
+    <td><span class="{{statusClass .Status}}" id="status-{{.ID}}">● {{.Status}}</span></td>
+    <td style="font-size:12px;color:#666">{{formatTimePtr .LastSeen}}</td>
+    <td><code style="font-size:11px;color:#666">{{slice .APIKey 0 12}}…</code></td>
+    <td>
+      <button class="btn btn-sm" onclick="checkNode({{.ID}}, this)">ping</button>
+      <a href="/nodes/{{.ID}}/regenkey" class="btn btn-sm">regen key</a>
+      <a href="/install-script?node={{.ID}}" class="btn btn-sm">install.sh</a>
+      <form method="post" action="/nodes/{{.ID}}/delete" style="display:inline"
+            onsubmit="return confirm('Usuń node {{.Name}}?')">
+        <button class="btn btn-sm btn-danger">usuń</button>
+      </form>
+    </td>
+  </tr>
+  {{else}}
+  <tr><td colspan="7" style="color:#555;padding:20px">
+    Brak skonfigurowanych nodes. <a href="/nodes/add">Dodaj pierwszy node →</a>
+  </td></tr>
+  {{end}}
+</table>
+</div>
+
+<script>
+function checkNode(id, btn) {
+  var orig = btn.textContent;
+  btn.textContent = '...';
+  btn.disabled = true;
+  fetch('/nodes/'+id+'/check')
+    .then(r=>r.json())
+    .then(d=>{
+      var el = document.getElementById('status-'+id);
+      if(el){
+        el.textContent = '● '+d.status;
+        el.className = d.status === 'online' ? 'status-online' : 'status-offline';
+      }
+      btn.textContent = orig;
+      btn.disabled = false;
+    })
+    .catch(()=>{ btn.textContent = orig; btn.disabled = false; });
+}
+</script>
+{{end}}
+
+{{template "base" .}}

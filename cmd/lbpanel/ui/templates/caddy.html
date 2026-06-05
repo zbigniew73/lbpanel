@@ -1,0 +1,42 @@
+{{define "content"}}
+<h1>Caddy API</h1>
+
+<div style="margin-bottom:16px">
+  Status API (127.0.0.1:2019):
+  {{if .Online}}
+    <span class="status-online">● online</span>
+  {{else}}
+    <span class="status-offline">● offline / niedostępne</span>
+  {{end}}
+  <form method="post" action="/caddy/reload" id="reloadForm" style="display:inline;margin-left:16px">
+    <button class="btn btn-primary btn-sm">⟳ Przeładuj config</button>
+  </form>
+  <span id="reloadResult" style="margin-left:10px;font-size:13px"></span>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+  <div>
+    <h2>Podgląd konfiguracji (generowanej przez panel)</h2>
+    <pre>{{.Preview}}</pre>
+  </div>
+  <div>
+    <h2>Aktualny config z Caddy API</h2>
+    <pre style="max-height:500px;overflow-y:auto">{{.Config}}</pre>
+  </div>
+</div>
+
+<script>
+document.getElementById('reloadForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  fetch('/caddy/reload',{method:'POST'})
+    .then(r=>r.json())
+    .then(d=>{
+      var el = document.getElementById('reloadResult');
+      el.textContent = d.result === 'ok' ? '✓ Config załadowany pomyślnie' : '✗ Błąd: '+d.result;
+      el.style.color = d.result === 'ok' ? '#4f8' : '#f44';
+    });
+});
+</script>
+{{end}}
+
+{{template "base" .}}

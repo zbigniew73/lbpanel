@@ -1,0 +1,15 @@
+{{define "content"}}
+<h1>Nowy klucz API — {{.Node.Name}}</h1>
+<div class="card" style="max-width:580px">
+  <p style="color:#fa4;margin-bottom:12px">⚠ Stary klucz został unieważniony. Skopiuj nowy — wyświetlany <strong>tylko raz</strong>:</p>
+  <div class="key-box">{{.NewKey}}</div>
+  <p style="font-size:12px;color:#666;margin:12px 0">Zaktualizuj konfigurację agenta na node <strong>{{.Node.Name}}</strong> ({{.Node.IP}}):</p>
+  <pre>echo "LBAGENT_KEY={{.NewKey}}" > /opt/lbagent/lbagent.env
+systemctl restart lbagent</pre>
+  <div style="margin-top:16px">
+    <a href="/nodes" class="btn">← Wróć do listy</a>
+  </div>
+</div>
+{{end}}
+
+{{template "base" .}}

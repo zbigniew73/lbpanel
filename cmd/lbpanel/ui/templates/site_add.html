@@ -1,0 +1,35 @@
+{{define "content"}}
+<h1>Dodaj Site</h1>
+<div class="card" style="max-width:520px">
+  {{if .Error}}<div class="error">{{.Error}}</div>{{end}}
+  <form method="post" action="/sites/add">
+    <div class="form-group">
+      <label>Domena WordPress (np. strona1.pl)</label>
+      <input type="text" name="domain" placeholder="strona1.pl" autofocus>
+    </div>
+    <div class="form-group">
+      <label>CDN subdomena (np. cdn.strona1.pl) — opcjonalne</label>
+      <input type="text" name="cdn_sub" placeholder="cdn.strona1.pl">
+    </div>
+    <div class="form-group">
+      <label>WP source path do rsync (np. 192.168.1.50:/var/www/strona1.pl/wp-content/uploads/)</label>
+      <input type="text" name="wp_source" placeholder="192.168.1.50:/var/www/strona1.pl/wp-content/uploads/">
+    </div>
+    <div class="form-group">
+      <label>LB Policy</label>
+      <select name="lb_policy">
+        {{range .LBPolicies}}
+        <option value="{{.}}" {{if eq . "ip_hash"}}selected{{end}}>{{.}}</option>
+        {{end}}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Dodaj site →</button>
+    <a href="/sites" class="btn" style="margin-left:8px">Anuluj</a>
+  </form>
+  <p style="margin-top:16px;font-size:12px;color:#555">
+    Po dodaniu site kliknij <strong>Przeładuj Caddy config</strong> na dashboardzie aby zastosować zmiany.
+  </p>
+</div>
+{{end}}
+
+{{template "base" .}}
