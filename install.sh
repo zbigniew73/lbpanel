@@ -3,7 +3,7 @@
 # lbpanel install script — AlmaLinux 9 / Rocky Linux 9
 # Użycie:
 #   ./install.sh panel                         — instalacja panelu na lb01
-#   ./install.sh panel --domain lbpanel.20z.eu — z domeną (generuje Caddyfile)
+#   ./install.sh panel --domain lbpanel.domena.eu — z domeną (generuje Caddyfile)
 #   ./install.sh agent <KEY> <PANEL_URL>        — agent na web01/02/03
 #   ./install.sh caddy                          — instalacja Caddy na lb01
 #   ./install.sh deps                           — tylko zależności (bez instalacji)
