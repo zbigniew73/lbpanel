@@ -56,7 +56,7 @@ Po zalogowaniu do panelu: **Nodes → Dodaj node** — panel wygeneruje klucz AP
 Lub ręcznie:
 
 ```bash
-./install.sh agent <API_KEY> https://lbpanel.20z.eu:4040 web01
+./install.sh agent <API_KEY> https://lbpanel.domena.eu:4040 web01
 ```
 
 ## Dostęp do panelu
@@ -64,7 +64,7 @@ Lub ręcznie:
 | Tryb | URL |
 |------|-----|
 | Przez IP (self-signed cert) | `https://<IP>:4040` |
-| Przez domenę (Let's Encrypt) | `https://lbpanel.20z.eu` |
+| Przez domenę (Let's Encrypt) | `https://lbpanel.domena.eu` |
 
 Domyślne dane logowania: `lbadmin` / `lbadmin` — **zmień hasło po pierwszym logowaniu**.
 
