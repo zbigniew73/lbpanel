@@ -9,7 +9,7 @@ Panel zarządzania klastrem serwerów webowych opartym na **Caddy v2** jako load
 ```
                   klienci
                      │
-              lb01.20z.eu  (lbpanel + Caddy)
+              lb01.domena.eu  (lbpanel + Caddy)
              ┌─────┼─────┐
           web01  web02  web03  (lbagent)
 ```
