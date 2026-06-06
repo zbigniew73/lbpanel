@@ -14,7 +14,7 @@
     <td>{{.Port}}</td>
     <td><span class="{{statusClass .Status}}" id="status-{{.ID}}">● {{.Status}}</span></td>
     <td style="font-size:12px;color:#666">{{formatTimePtr .LastSeen}}</td>
-    <td><code style="font-size:11px;color:#666">{{slice .APIKey 0 12}}…</code></td>
+    <td><code style="font-size:11px;color:#666">{{truncate .APIKey 12}}…</code></td>
     <td>
       <button class="btn btn-sm" onclick="checkNode({{.ID}}, this)">ping</button>
       <a href="/nodes/{{.ID}}/regenkey" class="btn btn-sm">regen key</a>

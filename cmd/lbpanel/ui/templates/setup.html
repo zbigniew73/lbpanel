@@ -4,28 +4,16 @@
 {{if not .HasDomain}}
 <div class="error">
   Brak skonfigurowanej domeny. Uruchom lbpanel z flagą <code>--domain lbpanel.twojadomena.pl</code>
-  lub ustaw zmienną środowiskową <code>LBPANEL_DOMAIN=lbpanel.twojadomena.pl</code>.
+  lub ustaw zmienną środowiskową <code>LBPANEL_DOMAIN=lbpanel.twojadomena.pl</code> w pliku
+  <code>/opt/lbpanel/lbpanel.env</code> i zrestartuj: <code>systemctl restart lbpanel</code>
 </div>
 {{end}}
 
 <div class="card">
-  <h2>Jak to działa</h2>
-  <p style="color:#aaa;line-height:1.7;margin-bottom:16px">
-    lbpanel nasłuchuje na porcie <strong>4040 HTTPS</strong> z certyfikatem self-signed.<br>
-    Dostęp przez IP (<code>https://192.168.1.1:4040</code>) działa od razu — przeglądarka
-    wyświetli ostrzeżenie o certyfikacie, które należy zaakceptować raz.<br><br>
-    Aby uzyskać <strong>pełny HTTPS z Let's Encrypt</strong> przez domenę, Caddy musi
-    działać jako reverse proxy przed panelem na portach 80/443.
-    Poniżej gotowy Caddyfile do wklejenia.
-  </p>
-</div>
-
-<div class="card">
-  <h2>Tryb 1 — dostęp przez IP (self-signed, gotowe od razu)</h2>
+  <h2>Tryb 1 — dostęp przez IP (self-signed, działa od razu)</h2>
   <pre>https://&lt;IP_SERWERA&gt;:4040</pre>
   <p style="color:#666;font-size:12px;margin-top:8px">
-    Przeglądarka pokaże "Twoje połączenie nie jest prywatne" — kliknij "Zaawansowane → Przejdź mimo to".
-    Certyfikat jest self-signed ale połączenie jest szyfrowane.
+    Przeglądarka pokaże ostrzeżenie o certyfikacie — kliknij "Zaawansowane → Przejdź mimo to".
   </p>
 </div>
 
@@ -33,54 +21,45 @@
 <div class="card">
   <h2>Tryb 2 — domena <strong style="color:#5af">{{.Domain}}</strong> z Let's Encrypt</h2>
   <p style="color:#888;margin-bottom:12px;font-size:13px">
-    Wklej do <code>/etc/caddy/Caddyfile</code> na serwerze lb01,
-    następnie: <code>systemctl reload caddy</code>
+    Wklej do <code>/etc/caddy/Caddyfile</code>, następnie: <code>systemctl reload caddy</code>
   </p>
+  <pre id="caddyConfig"># /etc/caddy/Caddyfile
 
-  <pre id="caddyConfig"># /etc/caddy/Caddyfile — fragment dla lbpanel
-# Wymaga: DNS A/AAAA dla {{.Domain}} wskazuje na ten serwer
+{
+    admin 127.0.0.1:2019
+    email admin@{{.Domain}}
+}
 
-# Przekierowanie www → bez www
 www.{{.Domain}} {
     redir https://{{.Domain}}{uri} permanent
 }
 
-# Panel z Let's Encrypt (Caddy pobierze certyfikat automatycznie)
 {{.Domain}} {
-    # Reverse proxy do lbpanel (self-signed backend — skip verify)
     reverse_proxy https://127.0.0.1:4040 {
         transport http {
             tls_insecure_skip_verify
         }
     }
-
-    # Logowanie dostępu do panelu
     log {
         output file /var/log/caddy/lbpanel-access.log {
             roll_size 10mb
             roll_keep 5
         }
     }
-
-    # Opcjonalne: ogranicz dostęp tylko z wybranych IP
-    # @blocked not remote_ip 1.2.3.4/32 192.168.0.0/24
-    # respond @blocked "Forbidden" 403
-}
-</pre>
-
+}</pre>
   <button class="btn btn-sm" onclick="copyConfig()">Kopiuj do schowka</button>
   <span id="copyMsg" style="margin-left:10px;font-size:12px;color:#4f8"></span>
 </div>
 
 <div class="card">
-  <h2>DNS — co ustawić w Cloudflare / rejestratorze</h2>
+  <h2>DNS — ustaw w Cloudflare / rejestratorze</h2>
   <table>
     <tr><th>Typ</th><th>Nazwa</th><th>Wartość</th><th>Proxy</th></tr>
     <tr>
       <td>A</td>
       <td><code>{{.Domain}}</code></td>
-      <td><code>&lt;IP_SERWERA_LB01&gt;</code></td>
-      <td><span style="color:#fa4">⚠ OFF</span> (szara chmurka — Let's Encrypt wymaga bezpośredniego dostępu)</td>
+      <td><code>&lt;IP_SERWERA&gt;</code></td>
+      <td><span style="color:#fa4">⚠ OFF (szara chmurka)</span></td>
     </tr>
     <tr>
       <td>CNAME</td>
@@ -90,37 +69,15 @@ www.{{.Domain}} {
     </tr>
   </table>
   <p style="font-size:12px;color:#666;margin-top:8px">
-    Po uzyskaniu certyfikatu możesz włączyć Cloudflare proxy (pomarańczowa chmurka)
-    i zmienić SSL/TLS mode na <strong>Full (strict)</strong>.
-    Wtedy Caddy musi mieć certyfikat CF Origin lub Let's Encrypt — oba działają.
+    Po uzyskaniu certyfikatu możesz włączyć Cloudflare proxy i ustawić SSL → Full (strict).
   </p>
 </div>
-
-<div class="card">
-  <h2>Sprawdzenie po konfiguracji</h2>
-  <pre>
-# Test HTTP challenge (musi odpowiedzieć 200/301 przed włączeniem CF proxy)
-curl -I http://{{.Domain}}/.well-known/acme-challenge/test
-
-# Status certyfikatu Caddy
-caddy trust
-journalctl -u caddy -n 30 --no-pager
-
-# Test panelu przez domenę
-curl -k https://{{.Domain}}/health
-  </pre>
-</div>
-
 {{else}}
-<div class="card" style="border-color:#333">
+<div class="card">
   <h2>Konfiguracja domeny</h2>
-  <p style="color:#aaa;margin-bottom:12px">
-    Ustaw domenę w <code>/opt/lbpanel/lbpanel.env</code>:
-  </p>
+  <p style="color:#aaa;margin-bottom:12px">Dodaj do <code>/opt/lbpanel/lbpanel.env</code>:</p>
   <pre>LBPANEL_DOMAIN=lbpanel.twojadomena.pl</pre>
-  <p style="font-size:12px;color:#666;margin-top:8px">
-    Następnie: <code>systemctl restart lbpanel</code>
-  </p>
+  <p style="font-size:12px;color:#666;margin-top:8px">Następnie: <code>systemctl restart lbpanel</code></p>
 </div>
 {{end}}
 

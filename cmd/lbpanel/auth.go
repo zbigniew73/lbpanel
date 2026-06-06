@@ -19,18 +19,15 @@ type contextKey string
 
 const ctxUser contextKey = "user"
 
-// hashPassword returns bcrypt hash of password
 func hashPassword(password string) (string, error) {
 	b, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(b), err
 }
 
-// checkPassword validates password against bcrypt hash
 func checkPassword(hash, password string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
 }
 
-// generateAPIKey returns a cryptographically random hex token
 func generateAPIKey() (string, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
@@ -40,13 +37,11 @@ func generateAPIKey() (string, error) {
 	return hex.EncodeToString(h[:]), nil
 }
 
-// generateJWT creates a signed JWT token for the admin session
 func generateJWT(username string) (string, error) {
 	secret := dbGetSetting("jwt_secret")
 	if secret == "" {
 		return "", fmt.Errorf("jwt_secret not set")
 	}
-
 	claims := jwt.MapClaims{
 		"sub": username,
 		"exp": time.Now().Add(8 * time.Hour).Unix(),
@@ -56,13 +51,11 @@ func generateJWT(username string) (string, error) {
 	return token.SignedString([]byte(secret))
 }
 
-// validateJWT validates a JWT token string, returns username
 func validateJWT(tokenStr string) (string, error) {
 	secret := dbGetSetting("jwt_secret")
 	if secret == "" {
 		return "", fmt.Errorf("jwt_secret not set")
 	}
-
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method")
@@ -72,12 +65,10 @@ func validateJWT(tokenStr string) (string, error) {
 	if err != nil || !token.Valid {
 		return "", fmt.Errorf("invalid token")
 	}
-
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
 		return "", fmt.Errorf("invalid claims")
 	}
-
 	sub, ok := claims["sub"].(string)
 	if !ok {
 		return "", fmt.Errorf("invalid sub")
@@ -85,7 +76,6 @@ func validateJWT(tokenStr string) (string, error) {
 	return sub, nil
 }
 
-// setSessionCookie writes JWT to secure cookie
 func setSessionCookie(w http.ResponseWriter, username string) error {
 	token, err := generateJWT(username)
 	if err != nil {
@@ -96,14 +86,13 @@ func setSessionCookie(w http.ResponseWriter, username string) error {
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true, // always HTTPS
-		SameSite: http.SameSiteStrictMode,
+		Secure:   false, // false = działa zarówno przez Caddy HTTPS jak i bezpośrednio
+		SameSite: http.SameSiteLaxMode, // Lax zamiast Strict — Strict blokuje przekierowania
 		MaxAge:   8 * 3600,
 	})
 	return nil
 }
 
-// clearSessionCookie removes the session cookie
 func clearSessionCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:    cookieName,
@@ -114,7 +103,6 @@ func clearSessionCookie(w http.ResponseWriter) {
 	})
 }
 
-// authMiddleware protects routes — redirects to /login if no valid session
 func authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(cookieName)
@@ -133,7 +121,6 @@ func authMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// agentAuthMiddleware protects agent API routes — checks X-LBPanel-Key header
 func agentAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		key := r.Header.Get("X-LBPanel-Key")
@@ -146,15 +133,12 @@ func agentAuthMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
-		// Update node last_seen and status
 		dbUpdateNodeStatus(node.ID, "online")
-
 		ctx := context.WithValue(r.Context(), contextKey("node"), node)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-// ensureAdminExists creates default admin if not present in settings
 func ensureAdminExists() {
 	existing := dbGetSetting("admin_password_hash")
 	if existing != "" {
@@ -167,7 +151,6 @@ func ensureAdminExists() {
 	dbSetSetting("admin_username", "lbadmin")
 	dbSetSetting("admin_password_hash", hash)
 
-	// Generate JWT secret
 	b := make([]byte, 32)
 	rand.Read(b)
 	dbSetSetting("jwt_secret", hex.EncodeToString(b))
