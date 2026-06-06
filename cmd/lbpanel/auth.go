@@ -86,8 +86,8 @@ func setSessionCookie(w http.ResponseWriter, username string) error {
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false, // false = działa zarówno przez Caddy HTTPS jak i bezpośrednio
-		SameSite: http.SameSiteLaxMode, // Lax zamiast Strict — Strict blokuje przekierowania
+		Secure:   true,                  // true — wymagane przez SameSite=None
+		SameSite: http.SameSiteNoneMode, // None — działa przez Caddy proxy
 		MaxAge:   8 * 3600,
 	})
 	return nil
@@ -95,11 +95,13 @@ func setSessionCookie(w http.ResponseWriter, username string) error {
 
 func clearSessionCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
-		Name:    cookieName,
-		Value:   "",
-		Path:    "/",
-		MaxAge:  -1,
+		Name:     cookieName,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
 		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 	})
 }
 

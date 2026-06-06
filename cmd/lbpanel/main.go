@@ -27,7 +27,8 @@ import (
 //go:embed ui/templates/*.html
 var templateFS embed.FS
 
-var templates *template.Template
+// templateCache stores one parsed template set per page
+var templateCache map[string]*template.Template
 
 const AppVersion = "1.0.0"
 
@@ -53,9 +54,7 @@ var funcMap = template.FuncMap{
 	},
 	"upper":   strings.ToUpper,
 	"version": func() string { return AppVersion },
-	// not — negacja bool w templates
-	"not": func(v bool) bool { return !v },
-	// truncate — skróć string do n znaków
+	"not":     func(v bool) bool { return !v },
 	"truncate": func(s string, n int) string {
 		if len(s) <= n {
 			return s
@@ -65,20 +64,73 @@ var funcMap = template.FuncMap{
 }
 
 func loadTemplates() {
-	var err error
-	templates, err = template.New("").Funcs(funcMap).ParseFS(
-		templateFS, "ui/templates/*.html",
-	)
-	if err != nil {
-		log.Fatalf("template parse: %v", err)
+	templateCache = make(map[string]*template.Template)
+
+	pages := []string{
+		"dashboard.html",
+		"login.html",
+		"nodes.html",
+		"node_add.html",
+		"node_key.html",
+		"sites.html",
+		"site_add.html",
+		"caddy.html",
+		"logs.html",
+		"password.html",
+		"setup.html",
+	}
+
+	// standalone pages (no base layout)
+	standalone := map[string]bool{"login.html": true}
+
+	for _, page := range pages {
+		var t *template.Template
+		var err error
+		if standalone[page] {
+			// login has its own full HTML layout
+			t, err = template.New("").Funcs(funcMap).ParseFS(
+				templateFS,
+				"ui/templates/"+page,
+			)
+		} else {
+			// all other pages use base.html layout
+			t, err = template.New("").Funcs(funcMap).ParseFS(
+				templateFS,
+				"ui/templates/base.html",
+				"ui/templates/"+page,
+			)
+		}
+		if err != nil {
+			log.Fatalf("template parse %s: %v", page, err)
+		}
+		templateCache[page] = t
+		log.Printf("template loaded: %s", page)
 	}
 }
 
+// standaloneTemplates don't use base layout — executed directly by their define name
+var standaloneTemplates = map[string]string{
+	"login.html": "login.html",
+}
+
 func renderTemplate(w http.ResponseWriter, name string, data interface{}) {
+	t, ok := templateCache[name]
+	if !ok {
+		log.Printf("template not found: %s", name)
+		http.Error(w, "template not found: "+name, http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := templates.ExecuteTemplate(w, name, data); err != nil {
-		log.Printf("template %s error: %v", name, err)
-		http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
+
+	// standalone templates execute their own define block
+	execName := "base"
+	if tplName, isStandalone := standaloneTemplates[name]; isStandalone {
+		execName = tplName
+	}
+
+	if err := t.ExecuteTemplate(w, execName, data); err != nil {
+		log.Printf("template %s render error: %v", name, err)
+		http.Error(w, "render error: "+err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -107,7 +159,7 @@ func main() {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RealIP)
 
-	// ParseForm middleware — KRYTYCZNE: bez tego r.FormValue() zwraca ""
+	// ParseForm middleware
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodPost {
@@ -152,12 +204,12 @@ func main() {
 		r.Get("/nodes/{id}/check",     handleNodeCheck)
 		r.Post("/nodes/checkall",      handleCheckAllNodes)
 
-		r.Get("/sites",             handleSites)
-		r.Get("/sites/add",         handleSiteAdd)
-		r.Post("/sites/add",        handleSiteAdd)
+		r.Get("/sites",              handleSites)
+		r.Get("/sites/add",          handleSiteAdd)
+		r.Post("/sites/add",         handleSiteAdd)
 		r.Post("/sites/{id}/delete", handleSiteDelete)
 
-		r.Get("/caddy",        handleCaddy)
+		r.Get("/caddy",         handleCaddy)
 		r.Post("/caddy/reload", handleCaddyReload)
 
 		r.Get("/logs",           handleLogs)
@@ -180,7 +232,7 @@ func main() {
 	}
 
 	log.Printf("lbpanel v%s → https://%s", AppVersion, *addr)
-	log.Printf("login: lbadmin / lbadmin  ← zmień hasło!")
+	log.Printf("login: lbadmin / lbadmin")
 
 	if err := srv.ListenAndServeTLS("", ""); err != nil {
 		log.Fatal(err)
@@ -201,7 +253,6 @@ func buildSelfSignedTLS(certDir, domain string) (*tls.Config, error) {
 	}
 
 	log.Println("TLS: generating new self-signed ECDSA cert...")
-
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, err
